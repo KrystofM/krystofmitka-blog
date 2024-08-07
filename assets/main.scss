@@ -3,3 +3,28 @@
 ---
 
 @import "minima";
+
+// Your custom CSS goes here
+.algorithm {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.algorithm ol {
+  counter-reset: item;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.algorithm li {
+  counter-increment: item;
+  margin-bottom: 5px;
+}
+
+.algorithm li:before {
+  content: counter(item) ". ";
+  font-weight: bold;
+}

@@ -23,11 +23,12 @@ email: krystof@mitka.cz
 description: >-
 baseurl: "/" # the subpath of your site, e.g. /blog
 url: "https://krystofmitka.com" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: jekyllrb
-github_username: jekyll
+twitter_username: krystof_mitka
+github_username: KrystofM
 show_excerpts: true
 
 # Build settings
+markdown: kramdown
 theme: minima
 plugins:
   - jekyll-feed
