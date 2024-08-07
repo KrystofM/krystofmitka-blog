@@ -5,6 +5,95 @@
 @import "minima";
 
 // Your custom CSS goes here
+@media (max-width: 768px) {
+  .equation-container {
+    font-size: 9px;
+  }
+
+  small {
+    font-size: 12px;
+  }
+}
+
+.responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+}
+
+.responsive-table th,
+.responsive-table td {
+  padding: 0.5em;
+  border: 1px solid #ddd;
+  text-align: left;
+  vertical-align: middle; /* This centers content vertically */
+}
+
+.responsive-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.math-container {
+  overflow-x: auto;
+}
+
+.bold-row td {
+  font-weight: bold;
+}
+
+@media screen and (max-width: 600px) {
+  .responsive-table,
+  .responsive-table thead,
+  .responsive-table tbody,
+  .responsive-table th,
+  .responsive-table td,
+  .responsive-table tr {
+    display: block;
+  }
+
+  .responsive-table thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  .responsive-table tr {
+    border: 1px solid #ccc;
+    margin-bottom: 0.5em;
+  }
+
+  .responsive-table td {
+    border: none;
+    position: relative;
+    padding-left: 50%;
+    min-height: 1em;
+  }
+
+  .responsive-table td:before {
+    content: attr(data-label);
+    position: absolute;
+    left: 6px;
+    width: 45%;
+    padding-right: 10px;
+    white-space: nowrap;
+    font-weight: bold;
+    top: 50%; /* Position the label vertically */
+    transform: translateY(-50%); /* Center it precisely */
+  }
+
+  .math-container {
+    overflow-x: auto;
+    max-width: 100%;
+    padding-left: 0;
+    margin-top: 0.5em;
+  }
+
+  .bold-row td:before {
+    font-weight: bold;
+  }
+}
+
 .algorithm {
   background-color: #f9f9f9;
   border: 1px solid #ddd;

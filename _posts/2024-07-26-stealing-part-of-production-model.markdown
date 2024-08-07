@@ -72,7 +72,7 @@ We now introduce a general algorithm framework that is used to iteratively narro
 <li><strong>while</strong> stop_condition($\mathbf{l}, \mathbf{h}, r$) is false <strong>do</strong></li>
 <li style="text-indent: 1em;">$\mathbf{b} \gets \mathbf{f}(\mathbf{l}, \mathbf{h}, r)$</li>
 <li style="text-indent: 1em;">$k \gets \mathcal{O}(p, \mathbf{b})$</li>
-<li style="text-indent: 1em;">$\mathcal{C} \gets \mathcal{C} \cap \{\mathbf{x} : z_k + b_k \geq z_j + b_j, \forall j \neq k\}$</li>
+<li style="text-indent: 1em;"><div class="math-container">$\mathcal{C} \gets \mathcal{C} \cap \{\mathbf{x} : z_k + b_k \geq z_j + b_j, \forall j \neq k\}$</div></li>
 <li style="text-indent: 1em;">$\mathbf{l} \gets \mathbf{x}_{\text{min}}$</li>
 <li style="text-indent: 1em;">$\mathbf{h} \gets \mathbf{x}_{\text{max}}$</li>
 <li style="text-indent: 1em;">$r \gets r + 1$</li>
@@ -120,6 +120,7 @@ Generally, we consider two different stop conditions for the attacker's querying
 
 1. **Fixed Budget Condition**: When the attacker has a budget of $T$ requests for each batch of $N_b$ tokens, the querying process stops after $T$ rounds. Formally, this stop condition can be defined as:
 
+<div class="math-container">
    $$
    \text{stop_condition}(\mathbf{l}, \mathbf{h}, r) =
    \begin{cases}
@@ -127,9 +128,10 @@ Generally, we consider two different stop conditions for the attacker's querying
    \text{False} & \text{otherwise}.
    \end{cases}
    $$
-
+</div>
 2. **Precision Condition**: When the attacker aims to attain a certain precision $\epsilon$ of the result and disregards the budget, the querying process stops when the largest interval so far is less than $\epsilon$. Formally, this stop condition can be defined as:
 
+<div class="math-container">
    $$
    \text{stop_condition}(\mathbf{l}, \mathbf{h}, r) =
    \begin{cases}
@@ -137,26 +139,31 @@ Generally, we consider two different stop conditions for the attacker's querying
    \text{False} & \text{otherwise}.
    \end{cases}
    $$
-
+</div>
 ### StartOverN With Uniform Prior
 
 We start by assuming uniform prior over the interval $[l_i, h_i]$ for each logit. A simple approach is to bias logits such that the probability of sampling token 0 (i.e. the maximum token) is $1/n$. This approach, introduced briefly in [Carlini et al., 2024](#carlini2024), has been the state-of-the-art method prior to the work presented in this paper. We formalize this approach and provide a derivation for a solution of the biasing term.
 
 **Theorem 1:** Given independent and identically distributed (i.i.d.) random variables $P_1, P_2, \ldots, P_{n-1}$ from a uniform distribution on an interval between $l_i$ and $h_i$, and constants $b_1, b_2, \ldots, b_{n-1}$, the StartOverN algorithm aims to find $b_i$ such that:
 
+<div class="math-container">
 $$
 P \left( \max(P_1 + b_1, P_2 + b_2, \ldots, P_{n-1} + b_{n-1}) \leq 1 \right) = \frac{1}{n}
 $$
+</div>
 
 A solution to this problem is given by:
 
+<div class="math-container">
 $$
 b_i = 1 - l_i - \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (h_i - l_i)
 $$
+</div>
 
 **Proof:**
 We need
 
+<div class="math-container">
 $$
 \begin{align*}
 P \left( \max(P_1 + b_1, \ldots, P_{n-1} + b_{n-1}) \leq 1 \right) &= \frac{1}{n} \\
@@ -165,9 +172,11 @@ P(P_1 \leq 1 - b_1) \cdot \ldots \cdot P(P_{n-1} \leq 1 - b_{n-1}) &= \frac{1}{n
 \prod_{i=1}^{n-1} \frac{1 - b_i - l_i}{h_i - l_i} &= \frac{1}{n}
 \end{align*}
 $$
+</div>
 
 This is satisfied if $\forall i$:
 
+<div class="math-container">
 $$
 \begin{align*}
 \frac{1 - b_i - l_i}{h_i - l_i} &= \left(\frac{1}{n}\right)^{\frac{1}{n-1}} \\
@@ -175,20 +184,25 @@ $$
 b_i &= 1 - l_i - \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (h_i - l_i)
 \end{align*}
 $$
+</div>
 
 Hence, $b_i = 1 - l_i - \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (h_i - l_i)$ is a solution.
 
 In the vector notation of the biasing function we would therefore write:
 
+<div class="math-container">
 $$
 \mathbf{f}(\mathbf{l}, \mathbf{h}, r) = 1 - \mathbf{l} - \left(\frac{1}{n}\right)^\frac{1}{n-1}(\mathbf{h} - \mathbf{l})
 $$
+</div>
 
 For the readers coming from [Carlini et al., 2024](#carlini2024) we note that the solution can be rewritten using an equivalent scaling term:
 
+<div class="math-container">
 $$
 \left(\frac{1}{n}\right)^\frac{1}{n-1} = \exp\left(\frac{-\log(n)}{n - 1}\right)
 $$
+</div>
 
 ### Finding parameters for normal distribution
 
@@ -204,30 +218,35 @@ As seen in Figure 1, the logits can be reasonably well modeled using a normal di
 
 Now we can formalize an algorithm using the normal distribution prior. We consider each logit as a random variable drawn from a normal distribution using the parameters $\mu$ and $\sigma^2$, which we have derived in previous section. At each step of the algorithm we bound the logit $z_i$ using $l_i$ and $h_i$ meaning the logits are actually drawn from a truncated normal distribution over the interval $[l_i, h_i]$.
 
-Formally, we note
-
-Let $P_i \sim N(\mu, \sigma^2)$ be truncated such that $l_i \leq P_i \leq h_i$ and $0 \leq l_i \leq h_i \leq 1$, where $\Phi$ is the CDF of $N(\mu, \sigma^2)$.
+Formally, we note let $P_i \sim N(\mu, \sigma^2)$ be truncated such that $l_i \leq P_i \leq h_i$ and $0 \leq l_i \leq h_i \leq 1$, where $\Phi$ is the CDF of $N(\mu, \sigma^2)$.
 
 Then, the CDF of $P_i$ is given by:
 
+<div class="math-container">
 $$
 \Phi_{P_i}(x) = P( P_i \leq x ) = \frac{\Phi(x) - \Phi(l_i)}{\Phi(h_i) - \Phi(l_i)}
 $$
+</div>
 
 **Theorem 2:** Given independent and identically distributed (i.i.d.) random variables $P_1, P_2, \ldots, P_{n-1}$ from a truncated normal distribution with truncation points $l_i$ and $h_i$, and constants $b_1, b_2, \ldots, b_{n-1}$, the StartOverN algorithm aims to find $b_i$ such that:
 
+<div class="math-container">
 $$
 P \left( \max(P_1 + b_1, P_2 + b_2, \ldots, P_{n-1} + b_{n-1}) \leq 1 \right) = \frac{1}{n}
 $$
+</div>
 
 A solution to this problem is given by:
 
+<div class="math-container">
 $$
 b_i = 1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right)
 $$
+</div>
 
 **Proof:** We need
 
+<div class="math-container">
 $$
 \begin{align*}
 P \left( \max(P_1 + b_1, \ldots, P_{n-1} + b_{n-1}) \leq 1 \right) &= \frac{1}{n} \\
@@ -236,9 +255,11 @@ P(P_1 \leq 1 - b_1) \cdot \ldots \cdot P(P_{n-1} \leq 1 - b_{n-1}) &= \frac{1}{n
 \prod_{i=1}^{n-1} \frac{\Phi(1 - b_i) - \Phi(l_i)}{\Phi(h_i) - \Phi(l_i)} &= \frac{1}{n} \\
 \end{align*}
 $$
+</div>
 
 This is satisfied if $\forall i$:
 
+<div class="math-container">
 $$
 \begin{align*}
 \frac{\Phi(1 - b_i) - \Phi(l_i)}{\Phi(h_i) - \Phi(l_i)} &= \left(\frac{1}{n}\right)^{\frac{1}{n-1}} \\
@@ -248,26 +269,38 @@ $$
 b_i &= 1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right)
 \end{align*}
 $$
+</div>
 
-Hence, $b_i = 1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right)$ is a solution.
+Hence,
+
+<div class="math-container"> 
+$b_i = 1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right)$ 
+</div>
+is a solution.
 
 We have derived the bias term in similar fashion to the uniform prior. Again we write the vector notation of the biasing function as:
 
+<div class="math-container">
 $$
 \mathbf{f}(\mathbf{l}, \mathbf{h}, r) =  1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(\mathbf{h}) - \Phi(\mathbf{l})) + \Phi(\mathbf{l}) \right).
 $$
+</div>
 
 The generalized form of the function for any distribution truncated on the interval $[a, b]$, where the CDF is defined as:
 
+<div class="math-container">
 $$
 F_{[a,b]}(x) = \frac{F(x) - F(a)}{F(b) - F(a)}, \quad \text{for} \; a \leq x \leq b.
 $$
+</div>
 
 This can be analogously formulated as:
 
+<div class="math-container">
 $$
 \mathbf{f}(\mathbf{l}, \mathbf{h}, r) = 1 - F^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (F(\mathbf{h}) - F(\mathbf{l})) + F(\mathbf{l}) \right)
 $$
+</div>
 
 This result can be useful when considering different distributional assumptions for the logit
 
@@ -320,6 +353,7 @@ As shown in [Figure 3](#figure-3), using the newly defined error metric, the jum
 
 A slightly better approach would be to adjust our guess by leveraging our understanding of the reason for the jump. One general solution is to weight how far the lower bound $$l_i$$ is from its initial value 0, and how far the upper bound $$h_i$$ is from its initial value 1. This ensures that we are closer to the respective bound in proportion to how far we are from the initial value. We achieve this with the following definition.
 
+<div class="math-container">
 $$
 \mathbf{m} = \frac{\mathbf{h} + \mathbf{l}}{2}
 $$
@@ -331,6 +365,8 @@ $$
 $$
 \mathbf{g}_w = \mathbf{m} + \left(\frac{1 - \mathbf{h}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r} - \left(\frac{\mathbf{l}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r}
 $$
+
+</div>
 
 We start by centering our guess at the middle value of the bounds, and then weighting how far we have moved from the initial value: $$1 - \mathbf{h}$$ for the upper bound and $$\mathbf{l}$$ for the lower bound, divided by the total amount we have moved from the initial values, $$\mathbf{l} + (1 - \mathbf{h})$$. Using these weights, we scale the radius $$\mathbf{r}$$ of our interval.
 
@@ -353,12 +389,44 @@ We hypothesize that error jumps are an essential characteristic of highly perfor
 
 We evaluate the performance of various algorithms designed to extract logit distributions from large language models. We compare the algorithms based on the number of queries required to achieve a specified precision and report on the queries per logit metric. We measure their performance using the l2-norm of the difference between the true logit vector $$\mathbf{z}$$ and the weighted guess $$\mathbf{g}_w$$ by $$\| \mathbf{z} - \mathbf{g}_w \|_2$$.
 
-| Name                               | Bias Function $$\mathbf{f}(\mathbf{l}, \mathbf{h})$$                                                                               | Queries per logit |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| Simultaneous Binary Search         | $$1 - \frac{\mathbf{l} + \mathbf{h}}{2}$$                                                                                          | 3.12              |
-| Start Over N with Uniform Prior    | $$1 - \mathbf{l} - \left(\frac{1}{n}\right)^\frac{1}{n-1}(\mathbf{h} - \mathbf{l})$$                                               | 2.42              |
-| **Start Over N with Normal Prior** | $$1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(\mathbf{h}) - \Phi(\mathbf{l})) + \Phi(\mathbf{l}) \right)$$ | **1.98**          |
-
+<table class="responsive-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Bias Function f(l,h)</th>
+      <th>Queries per logit</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td data-label="Name">Simultaneous Binary Search</td>
+      <td data-label="Bias Function">
+        <div class="math-container">
+          $$1 - \frac{l+h}{2}$$
+        </div>
+      </td>
+      <td data-label="Queries per logit">3.12</td>
+    </tr>
+    <tr>
+      <td data-label="Name">Start Over N with Uniform Prior</td>
+      <td data-label="Bias Function">
+        <div class="math-container">
+          $$1 - l - \left(\frac{1}{n}\right)^{\frac{1}{n-1}}(h - l)$$
+        </div>
+      </td>
+      <td data-label="Queries per logit">2.42</td>
+    </tr>
+     <tr class="bold-row">
+      <td data-label="Name">Start Over N with Normal Prior</td>
+      <td data-label="Bias Function">
+        <div class="math-container">
+          $$1 - \Phi^{-1}\left(\left(\frac{1}{n}\right)^{\frac{1}{n-1}}(\Phi(h) - \Phi(l)) + \Phi(l)\right)$$
+        </div>
+      </td>
+      <td data-label="Queries per logit">1.98</td>
+    </tr>
+  </tbody>
+</table>
 Table 1: Comparison of Algorithms with Precision $10^{-6}$ and $\mathbf{g}_w$
 
 ## References
