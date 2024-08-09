@@ -2,7 +2,7 @@
 layout: post
 title: "Stealing a Part of Production LM: Improving the Algorithm"
 date: 2024-07-26 17:48:50 +0200
-excerpt: summary here
+excerpt: "Enhancing algorithms for extracting logit distributions from closed proprietary language models, focusing on leveraging the bias map feature and incorporating a normal distribution prior for more efficient extraction."
 ---
 
 ## Introduction
