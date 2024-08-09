@@ -221,13 +221,17 @@ $$
 
 ### Finding parameters for normal distribution
 
-In the previous derivation, we assumed a uniform distribution for all logits in the full output token vector. In this section, we hypothesize that logits follow a normal distribution.
+### Finding parameters for normal distribution
 
-We collected 52 logit distributions from the LLaMA-7b model for single character prompts, specifically using characters of the alphabet A-Z (26) and a-z (26). Each logit distribution was normalized with an assumed width of 40, and then the 52 logit distributions were flattened into a single vector. In Figure 1, we plot the histogram of the logit distribution with 100 bins in the interval $[0, 1]$.
+In the previous derivation, we assumed a uniform distribution for all logits in the full output token vector, as proposed in [CPD+24](#carlini2024). However, this assumption may not accurately reflect the true distribution of logits in large language models. To investigate this, we collected and analyzed logit distributions from several models, including LLaMA-7B, GPT-2, and Pythia.
+
+For LLaMA-7B, which we'll focus on in this example, we gathered 52 logit distributions using single character prompts (A-Z and a-z). After normalizing each distribution with an assumed width of 40, we flattened the 52 distributions into a single vector. Figure 1 shows the histogram of this logit distribution using 100 bins in the interval $[0, 1]$.
 
 ![Logit Distribution Fitting](/assets/gaussianfit.png)
 
-As seen in Figure 1, the logits can be reasonably well modeled using a normal distribution approximation. For our numerical experiments, we collected $\mu = 0.688$ and $\sigma = 0.066$, which we use extensively in the following tests. We note that while the following algorithms assume knowledge of the $\mu$ and $\sigma$ of the logit distributions we are trying to steal, in practice, these parameters can be inferred by either transferring them from smaller models or estimating them from a small number of logit distributions already collected.
+As evident from Figure 1, the logit distribution for LLaMA-7B deviates significantly from a uniform distribution. Instead, it appears to follow a normal distribution more closely. Similar patterns were observed in the other models we analyzed, though with varying parameters. This observation suggests that we can improve upon the algorithm in [CPD+24](#carlini2024) by incorporating a more accurate distributional assumption.
+
+For our numerical experiments with LLaMA-7B, we fitted a normal distribution to the data, obtaining parameters $\mu = 0.688$ and $\sigma = 0.066$. These parameters will be used in the following sections to develop an improved algorithm that leverages this more accurate representation of the logit distribution. While our algorithm assumes knowledge of $\mu$ and $\sigma$, in practice, these parameters could be estimated by transferring knowledge from smaller models or by analyzing a small sample of collected logit distributions.
 
 ### StartOverN With Normal Distribution Prior
 
