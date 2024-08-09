@@ -3,6 +3,16 @@ layout: post
 title: "Stealing a Part of Production LM: Improving the Algorithm"
 date: 2024-08-09 17:48:50 +0200
 excerpt: "Enhancing algorithms for extracting logit distributions from closed proprietary language models, focusing on leveraging the bias map feature and incorporating a normal distribution prior for more efficient extraction."
+author:
+  name: "Krystof Mitka"
+  link: "https://krystofmitka.com"
+supervisors:
+  - name: "Daniel Paleka"
+    link: "https://danielpaleka.com/"
+  - name: "Luca Mariot"
+    link: "https://lucamariot.org/"
+  - name: "Jasper Goseling"
+    link: "https://people.utwente.nl/j.goseling"
 ---
 
 ## Introduction

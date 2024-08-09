@@ -42,6 +42,28 @@
   font-weight: bold;
 }
 
+.post-meta {
+  font-size: $small-font-size;
+  color: $grey-color;
+
+  a {
+    color: $brand-color;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .p-supervisor {
+    font-style: italic;
+
+    &:not(:last-child) {
+      margin-right: -0.25em;
+    }
+  }
+}
+
 @media screen and (max-width: 600px) {
   .responsive-table,
   .responsive-table thead,
