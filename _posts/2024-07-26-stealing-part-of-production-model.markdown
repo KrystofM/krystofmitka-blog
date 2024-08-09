@@ -221,8 +221,6 @@ $$
 
 ### Finding parameters for normal distribution
 
-### Finding parameters for normal distribution
-
 In the previous derivation, we assumed a uniform distribution for all logits in the full output token vector, as proposed in [CPD+24](#carlini2024). However, this assumption may not accurately reflect the true distribution of logits in large language models. To investigate this, we collected and analyzed logit distributions from several models, including LLaMA-7B, GPT-2, and Pythia.
 
 For LLaMA-7B, which we'll focus on in this example, we gathered 52 logit distributions using single character prompts (A-Z and a-z). After normalizing each distribution with an assumed width of 40, we flattened the 52 distributions into a single vector. Figure 1 shows the histogram of this logit distribution using 100 bins in the interval $[0, 1]$.
