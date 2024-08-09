@@ -1,9 +1,23 @@
 ---
 layout: post
-title: "Stealing Part of Production Language Model"
+title: "Stealing a Part of Production LM: Improving the Algorithm"
 date: 2024-07-26 17:48:50 +0200
 excerpt: summary here
 ---
+
+## Introduction
+
+The current best-performing large language models are typically closed proprietary systems accessible only through APIs. Companies provide minimal information about their models' size, architecture, training data, or training processes ([OpenAI+24](#openai2024), [Google+23](#palm2023)). However, recent research by [CPD+24](#carlini2024) and [FRS+24](#finlayson2024) has shown that it is possible to extract detailed information about these closed models by exploiting certain functionalities offered by APIs from companies like OpenAI and Google. These studies have successfully extracted the exact model dimensionality and even the entire last layer representation, known as the unembedding matrix. In response to these security breaches, companies have revised or restricted parts of their APIs to invalidate or significantly increase the difficulty and cost of such attacks, aiming to safeguard their models' integrity and confidentiality.
+
+To extract the model dimensionality and steal the unembedding layer, the attacks rely on collecting a large number of full logit distributions. A _full logit distribution_ refers to the output vector produced by a neural network before the application of the softmax function. This vector contains the raw, unnormalized scores (logits) for each class in a classification task. In the context of large language models, the full logit distribution represents the scores assigned to each token in the model's vocabulary for a given input sequence. This work focuses exclusively on efficiently extracting the next-token full logit distributions, as these are the primary target for attackers aiming to reverse-engineer parts of the model.
+
+**Related Work.** The attacks formulated in related works ([CPD+24](#carlini2024), [FRS+24](#finlayson2024)) relied on _two_ API functionalities provided by the companies to steal a large number of full next-token logit distributions:
+
+1. **Access to Log Probabilities.** The access to the log probabilities of some of the most likely tokens. This feature enables users to obtain detailed information about the model's predictions for the next token in a sequence.
+
+2. **Biasing Tokens Using a Bias Map.** The ability to add a bias term to each logit before applying the softmax function. This bias map feature allows API users to influence the model's output by either censoring certain tokens or promoting others. For instance, users can increase the likelihood of specific tokens or completely suppress the generation of undesirable tokens.
+
+The most efficient attacks, as detailed in [CPD+24](#carlini2024) and [FRS+24](#finlayson2024), employ a combination of the aforementioned features. By biasing all tokens to appear among the most likely tokens and subsequently collecting their log probabilities, attackers can reverse engineer these probabilities back to logits. However, following the publication of these attacks, both Google and OpenAI have removed the feature that allows viewing of biased log probabilities. Consequently, this work focuses exclusively on algorithms that leverage the bias map feature to extract the complete logit distribution.
 
 ## General Algorithm Formulation
 
@@ -60,7 +74,7 @@ Henceforth, we assume all logit vectors $\mathbf{z}$ are normalized to the inter
 ### Algorithm Framework
 
 We will consider algorithms that modify the bias of multiple tokens simultaneously. Specifically, at each step, we will adjust the biases of all $N_b$ tokens. In scenarios where $N_b < v$, it is necessary to select subsets of tokens and repeat the procedure $\frac{v}{N_b}$ times. Prior to initiating the algorithm, we perform an initial query to the API without applying any bias map to identify the top token and set its index to 0 i.e. top token is $z_0$.
-We now introduce a general algorithm framework that is used to iteratively narrow down the possible values of $\mathbf{z}$, using lower bound vector $\mathbf{l} \in \mathbb{R}^{N_b}$ and upper bound vector $\mathbf{h} \in \mathbb{R}^{N_b}$, and give a concrete description of its implementation. The goal of all instances of this algorithm discussed in the following sections will be to come up with the function $\mathbf{f}(\mathbf{l}, \mathbf{h}, r)$, which sets all $N_b$ bias terms at each step of the algorithm. The following algorithm framework is a vectorized and generalized version of the algorithm discussed in \cite{carlini_stealing_2024}.
+We now introduce a general algorithm framework that is used to iteratively narrow down the possible values of $\mathbf{z}$, using lower bound vector $\mathbf{l} \in \mathbb{R}^{N_b}$ and upper bound vector $\mathbf{h} \in \mathbb{R}^{N_b}$, and give a concrete description of its implementation. The goal of all instances of this algorithm discussed in the following sections will be to come up with the function $\mathbf{f}(\mathbf{l}, \mathbf{h}, r)$, which sets all $N_b$ bias terms at each step of the algorithm. The following algorithm framework is a vectorized and generalized version of the algorithm discussed in [CPD+24](#carlini2024).
 
 <div class="algorithm">
 <strong>Algorithm 1:</strong> Learning logit differences with multi-token calls (Vectorized)
@@ -114,11 +128,11 @@ $$
 \mathbf{x}_{\text{max}} = \left( \max_{\mathbf{x} \in \mathcal{C}} x_1, \max_{\mathbf{x} \in \mathcal{C}} x_2, \ldots, \max_{\mathbf{x} \in \mathcal{C}} x_n \right)
 $$
 
-We can compute both $$\mathbf{x}_{min}$$ and $$\mathbf{x}_{max}$$ by considering the linear programming problem of finding the shortest path on a weighted graph ([Carlini et al., 2024](#carlini2024)).
+We can compute both $$\mathbf{x}_{min}$$ and $$\mathbf{x}_{max}$$ by considering the linear programming problem of finding the shortest path on a weighted graph [CPD+24](#carlini2024).
 
 Generally, we consider two different stop conditions for the attacker's querying process:
 
-1. **Fixed Budget Condition**: When the attacker has a budget of $T$ requests for each batch of $N_b$ tokens, the querying process stops after $T$ rounds. Formally, this stop condition can be defined as:
+**Fixed Budget Condition**: When the attacker has a budget of $T$ requests for each batch of $N_b$ tokens, the querying process stops after $T$ rounds. Formally, this stop condition can be defined as:
 
 <div class="math-container">
    $$
@@ -129,7 +143,8 @@ Generally, we consider two different stop conditions for the attacker's querying
    \end{cases}
    $$
 </div>
-2. **Precision Condition**: When the attacker aims to attain a certain precision $\epsilon$ of the result and disregards the budget, the querying process stops when the largest interval so far is less than $\epsilon$. Formally, this stop condition can be defined as:
+
+**Precision Condition**: When the attacker aims to attain a certain precision $\epsilon$ of the result and disregards the budget, the querying process stops when the largest interval so far is less than $\epsilon$. Formally, this stop condition can be defined as:
 
 <div class="math-container">
    $$
@@ -142,7 +157,7 @@ Generally, we consider two different stop conditions for the attacker's querying
 </div>
 ### StartOverN With Uniform Prior
 
-We start by assuming uniform prior over the interval $[l_i, h_i]$ for each logit. A simple approach is to bias logits such that the probability of sampling token 0 (i.e. the maximum token) is $1/n$. This approach, introduced briefly in [Carlini et al., 2024](#carlini2024), has been the state-of-the-art method prior to the work presented in this paper. We formalize this approach and provide a derivation for a solution of the biasing term.
+We start by assuming uniform prior over the interval $[l_i, h_i]$ for each logit. A simple approach is to bias logits such that the probability of sampling token 0 (i.e. the maximum token) is $1/n$. This approach, introduced briefly in [CPD+24](#carlini2024), has been the state-of-the-art method prior to the work presented in this paper. We formalize this approach and provide a derivation for a solution of the biasing term.
 
 **Theorem 1:** Given independent and identically distributed (i.i.d.) random variables $P_1, P_2, \ldots, P_{n-1}$ from a uniform distribution on an interval between $l_i$ and $h_i$, and constants $b_1, b_2, \ldots, b_{n-1}$, the StartOverN algorithm aims to find $b_i$ such that:
 
@@ -196,7 +211,7 @@ $$
 $$
 </div>
 
-For the readers coming from [Carlini et al., 2024](#carlini2024) we note that the solution can be rewritten using an equivalent scaling term:
+For the readers coming from [CPD+24](#carlini2024) we note that the solution can be rewritten using an equivalent scaling term:
 
 <div class="math-container">
 $$
@@ -431,4 +446,18 @@ Table 1: Comparison of Algorithms with Precision $10^{-6}$ and $\mathbf{g}_w$
 
 ## References
 
-<a id="carlini2024"></a>Carlini, N., Paleka, D., Dvijotham, K. D., Steinke, T., Hayase, J., Cooper, A. F., Lee, K., Jagielski, M., Nasr, M., Conmy, A., Wallace, E., Rolnick, D., & Tramèr, F. (2024, March). Stealing Part of a Production Language Model [arXiv:2403.06634 [cs]]. Retrieved May 1, 2024, from [http://arxiv.org/abs/2403.06634](http://arxiv.org/abs/2403.06634)
+<a id="carlini2024"></a>
+[CPD+24]
+Carlini, N., Paleka, D., Dvijotham, K. D., Steinke, T., Hayase, J., Cooper, A. F., Lee, K., Jagielski, M., Nasr, M., Conmy, A., Wallace, E., Rolnick, D., & Tramèr, F. (2024, March). Stealing Part of a Production Language Model [arXiv:2403.06634]. [http://arxiv.org/abs/2403.06634](http://arxiv.org/abs/2403.06634)
+
+<a id="finlayson2024"></a>
+[FRS+24]
+Finlayson, M., Ren, X., & Swayamdipta, S. (2024, March). Logits of API-Protected LLMs Leak Proprietary Information [arXiv:2403.09539]. [https://doi.org/10.48550/arXiv.2403.09539](https://doi.org/10.48550/arXiv.2403.09539)
+
+<a id="openai2024"></a>
+[OpenAI+24]
+OpenAI, Achiam, J., Adler, S., Agarwal, S., Ahmad, L., Akkaya, I., Aleman, F. L., Almeida, D., Altenschmidt, J., Altman, S., Anadkat, S., Avila, R., Babuschkin, I., Balaji, S., Balcom, V., Baltescu, P., Bao, H., Bavarian, M., Belgum, J., ... Zoph, B. (2024, March). GPT-4 Technical Report [arXiv:2303.08774]. [https://doi.org/10.48550/arXiv.2303.08774](https://doi.org/10.48550/arXiv.2303.08774)
+
+<a id="palm2023"></a>
+[Google+23]
+Anil, R., Dai, A. M., Firat, O., Johnson, M., Lepikhin, D., Passos, A., Shakeri, S., Taropa, E., Bailey, P., Chen, Z., Chu, E., Clark, J. H., Shafey, L. E., Huang, Y., Meier-Hellstern, K., Mishra, G., Moreira, E., Omernick, M., Robinson, K., ... Wu, Y. (2023, September). PaLM 2 Technical Report [arXiv:2305.10403]. [https://doi.org/10.48550/arXiv.2305.10403](https://doi.org/10.48550/arXiv.2305.10403)
