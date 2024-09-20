@@ -13,6 +13,8 @@ supervisors:
     link: "https://lucamariot.org/"
   - name: "Jasper Goseling"
     link: "https://people.utwente.nl/j.goseling"
+info_banner: "This blog post is a trimmed version of the research done in my bachelor thesis. For full version with additional theoretical results, checkout this <a href='https://example.com/full-thesis' style='text-decoration: underline;'>link</a>."
+warning_banner: "The attack described in this blog post is (as of 20th September 2024) possible to conduct against OpenAI. Attacking OpenAI and stealing a part of GPT3.5 or GPT4 can result in severe legal fines and we are not responsible for any damages that incur from such actions. The following work was carried out solely to expand the theoretical understanding of this class of attacks."
 ---
 
 ## Introduction
@@ -185,8 +187,9 @@ b_i = 1 - l_i - \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (h_i - l_i)
 $$
 </div>
 
-**Proof:**
-We need
+<details>
+  <summary>Click to expand the proof</summary>
+  We need
 
 <div class="math-container">
 $$
@@ -212,6 +215,8 @@ $$
 </div>
 
 Hence, $b_i = 1 - l_i - \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (h_i - l_i)$ is a solution.
+
+</details>
 
 In the vector notation of the biasing function we would therefore write:
 
@@ -271,40 +276,43 @@ b_i = 1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) -
 $$
 </div>
 
-**Proof:** We need
+<details>
+  <summary>Click to expand the proof</summary>
+  We need
 
-<div class="math-container">
-$$
-\begin{align*}
-P \left( \max(P_1 + b_1, \ldots, P_{n-1} + b_{n-1}) \leq 1 \right) &= \frac{1}{n} \\
-P(P_1 + b_1 \leq 1) \cdot \ldots \cdot P(P_{n-1} + b_{n-1} \leq 1) &= \frac{1}{n} \\
-P(P_1 \leq 1 - b_1) \cdot \ldots \cdot P(P_{n-1} \leq 1 - b_{n-1}) &= \frac{1}{n} \\
-\prod_{i=1}^{n-1} \frac{\Phi(1 - b_i) - \Phi(l_i)}{\Phi(h_i) - \Phi(l_i)} &= \frac{1}{n} \\
-\end{align*}
-$$
-</div>
+  <div class="math-container">
+  $$
+  \begin{align*}
+  P \left( \max(P_1 + b_1, \ldots, P_{n-1} + b_{n-1}) \leq 1 \right) &= \frac{1}{n} \\
+  P(P_1 + b_1 \leq 1) \cdot \ldots \cdot P(P_{n-1} + b_{n-1} \leq 1) &= \frac{1}{n} \\
+  P(P_1 \leq 1 - b_1) \cdot \ldots \cdot P(P_{n-1} \leq 1 - b_{n-1}) &= \frac{1}{n} \\
+  \prod_{i=1}^{n-1} \frac{\Phi(1 - b_i) - \Phi(l_i)}{\Phi(h_i) - \Phi(l_i)} &= \frac{1}{n} \\
+  \end{align*}
+  $$
+  </div>
 
 This is satisfied if $\forall i$:
 
-<div class="math-container">
-$$
-\begin{align*}
-\frac{\Phi(1 - b_i) - \Phi(l_i)}{\Phi(h_i) - \Phi(l_i)} &= \left(\frac{1}{n}\right)^{\frac{1}{n-1}} \\
-\Phi(1 - b_i) - \Phi(l_i) &= \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) \\
-\Phi(1 - b_i) &= \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \\
-1 - b_i &= \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right) \\
-b_i &= 1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right)
-\end{align*}
-$$
-</div>
+  <div class="math-container">
+  $$
+  \begin{align*}
+  \frac{\Phi(1 - b_i) - \Phi(l_i)}{\Phi(h_i) - \Phi(l_i)} &= \left(\frac{1}{n}\right)^{\frac{1}{n-1}} \\
+  \Phi(1 - b_i) - \Phi(l_i) &= \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) \\
+  \Phi(1 - b_i) &= \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \\
+  1 - b_i &= \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right) \\
+  b_i &= 1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right)
+  \end{align*}
+  $$
+  </div>
 
 Hence,
 
-<div class="math-container"> 
-$b_i = 1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right)$ 
-</div>
-is a solution.
+  <div class="math-container"> 
+  $b_i = 1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right)$ 
+  </div>
+  is a solution.
 
+</details>
 We have derived the bias term in similar fashion to the uniform prior. Again we write the vector notation of the biasing function as:
 
 <div class="math-container">

@@ -40,6 +40,30 @@ layout: default
     </p>
   </header>
 
+  {% if page.warning_banner %}
+  <div class="warning-banner">
+    <span class="warning-icon">&#9888;</span>
+    {{ page.warning_banner | raw }}
+    <button
+      class="close-warning"
+      onclick="this.parentElement.style.display='none';"
+    >
+      &times;
+    </button>
+  </div>
+  {% endif %} {% if page.info_banner %}
+  <div class="info-banner">
+    <span class="info-icon">&#9432;</span>
+    {{ page.info_banner | raw }}
+    <button
+      class="close-banner"
+      onclick="this.parentElement.style.display='none';"
+    >
+      &times;
+    </button>
+  </div>
+  {% endif %}
+
   <div class="post-content e-content" itemprop="articleBody">{{ content }}</div>
 
   {%- if site.disqus.shortname -%} {%- include disqus_comments.html -%} {%-

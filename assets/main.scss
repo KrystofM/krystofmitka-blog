@@ -64,6 +64,35 @@
   }
 }
 
+.info-banner {
+  position: relative;
+  background-color: #e6f3ff;
+  color: #0066cc;
+  padding: 10px 25px 10px 15px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  border: 1px solid #b3d9ff;
+  font-size: 14px;
+}
+
+.info-icon {
+  margin-right: 5px; /* Space between icon and text */
+  font-size: 14px; /* Adjust icon size */
+  color: #0066cc; /* Set the icon color to blue */
+}
+
+.close-banner {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #0066cc; /* Set the button color to blue */
+}
+
 @media screen and (max-width: 600px) {
   .responsive-table,
   .responsive-table thead,
@@ -138,4 +167,48 @@
 .algorithm li:before {
   content: counter(item) ". ";
   font-weight: bold;
+}
+
+.warning-banner {
+  position: relative;
+  background-color: #ffe6e6; /* Light red background */
+  color: #cc0000; /* Dark red text */
+  padding: 10px 35px 10px 15px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  border: 1px solid #ffb3b3; /* Light red border */
+  font-size: 14px;
+}
+
+.warning-icon {
+  margin-right: 5px; /* Space between icon and text */
+  font-size: 15px; /* Adjust icon size */
+  color: #cc0000; /* Set the icon color to dark red */
+}
+
+.close-warning {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #cc0000; /* Set the button color to dark red */
+}
+
+details {
+  padding: 10px 0;
+  margin-bottom: 1em;
+}
+
+summary {
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+
+details[open] summary {
+  margin-bottom: 10px;
 }
