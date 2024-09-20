@@ -14,7 +14,7 @@ supervisors:
   - name: "Jasper Goseling"
     link: "https://people.utwente.nl/j.goseling"
 info_banner: "This blog post is a trimmed version of the research done in my bachelor thesis. For full version with additional theoretical results, checkout this <a href='https://example.com/full-thesis' style='text-decoration: underline;'>link</a>."
-warning_banner: "The attack described in this blog post is (as of 20th September 2024) possible to conduct against OpenAI. Attacking OpenAI and stealing a part of GPT3.5 or GPT4 can result in severe legal fines and we are not responsible for any damages that incur from such actions. The following work was carried out solely to expand the theoretical understanding of this class of attacks."
+warning_banner: "The attack described in this blog post is (as of 20th September 2024) possible to conduct against OpenAI. Attacking OpenAI and stealing a part of GPT3.5 or GPT4 can result in severe legal fines. We are not responsible for any damages that incur from such actions. The following work was carried out solely to expand the theoretical understanding of this class of attacks."
 ---
 
 ## Introduction
