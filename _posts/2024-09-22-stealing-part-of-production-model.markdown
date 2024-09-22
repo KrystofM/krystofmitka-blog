@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Stealing a Part of Production LM: Improving the Algorithm"
-date: 2024-08-09 17:48:50 +0200
+date: 2024-09-22 15:48:50 +0200
 excerpt: "Enhancing algorithms for extracting logit distributions from closed proprietary language models, focusing on leveraging the bias map feature and incorporating a normal distribution prior for more efficient extraction."
 author:
   name: "Krystof Mitka"
@@ -13,8 +13,8 @@ supervisors:
     link: "https://lucamariot.org/"
   - name: "Jasper Goseling"
     link: "https://people.utwente.nl/j.goseling"
-info_banner: "This blog post is a trimmed version of the research done in my bachelor thesis. For full version with additional theoretical results, checkout this <a href='https://example.com/full-thesis' style='text-decoration: underline;'>link</a>."
-warning_banner: "The attack described in this blog post is (as of 20th September 2024) possible to conduct against OpenAI. Attacking OpenAI and stealing a part of GPT3.5 or GPT4 can result in severe legal fines. We are not responsible for any damages that incur from such actions. The following work was carried out solely to expand the theoretical understanding of this class of attacks."
+info_banner: "This blog post is a trimmed version of the research done in my bachelor thesis. For full version with additional theoretical results, checkout this <a href='https://drive.google.com/file/d/1sdGkHmTKEQiOgZv3idgbY7PBaK1zVvhX/view?usp=drive_link' target='_blank' style='text-decoration: underline;'>link</a>."
+warning_banner: "The attack described in this blog post is (as of 22th September 2024) possible to conduct against OpenAI. Attacking OpenAI and stealing a part of GPT3.5 or GPT4 can result in severe legal fines. We are not responsible for any damages that incur from such actions. The following work was carried out solely to expand the theoretical understanding of this class of attacks."
 ---
 
 ## Introduction

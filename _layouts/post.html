@@ -44,12 +44,6 @@ layout: default
   <div class="warning-banner">
     <span class="warning-icon">&#9888;</span>
     {{ page.warning_banner | raw }}
-    <button
-      class="close-warning"
-      onclick="this.parentElement.style.display='none';"
-    >
-      &times;
-    </button>
   </div>
   {% endif %} {% if page.info_banner %}
   <div class="info-banner">
