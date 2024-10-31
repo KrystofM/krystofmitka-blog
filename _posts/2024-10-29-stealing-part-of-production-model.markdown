@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Stealing a Part of Production LM: Improving the Algorithm"
-date: 2024-09-22 15:48:50 +0200
+date: 2024-10-29 11:48:50 +0200
 excerpt: "Enhancing algorithms for extracting logit distributions from closed proprietary language models, focusing on leveraging the bias map feature and incorporating a normal distribution prior for more efficient extraction."
 author:
   name: "Krystof Mitka"
@@ -14,7 +14,7 @@ supervisors:
   - name: "Jasper Goseling"
     link: "https://people.utwente.nl/j.goseling"
 info_banner: "This blog post is a trimmed version of the research done in my bachelor thesis. For full version with additional theoretical results, checkout this <a href='https://drive.google.com/file/d/1sdGkHmTKEQiOgZv3idgbY7PBaK1zVvhX/view?usp=drive_link' target='_blank' style='text-decoration: underline;'>link</a>."
-warning_banner: "The attack described in this blog post is (as of 22th September 2024) possible to conduct against OpenAI. Attacking OpenAI and stealing a part of GPT3.5 or GPT4 can result in severe legal fines. We are not responsible for any damages that incur from such actions. The following work was carried out solely to expand the theoretical understanding of this class of attacks."
+warning_banner: "The attack described in this blog post is (as of 29th October 2024) possible to conduct against OpenAI. Attacking OpenAI and stealing a part of GPT3.5 or GPT4 can result in severe legal fines. We are not responsible for any damages that incur from such actions. The following work was carried out solely to expand the theoretical understanding of this class of attacks."
 ---
 
 ## Introduction
@@ -92,7 +92,7 @@ Henceforth, we assume all logit vectors $\mathbf{z}$ are normalized to the inter
 We will consider algorithms that modify the bias of multiple tokens simultaneously. Specifically, at each step, we will adjust the biases of all $N_b$ tokens. In scenarios where $N_b < v$, it is necessary to select subsets of tokens and repeat the procedure $\frac{v}{N_b}$ times. Prior to initiating the algorithm, we perform an initial query to the API without applying any bias map to identify the top token and set its index to 0 i.e. top token is $z_0$.
 We now introduce a general algorithm framework that is used to iteratively narrow down the possible values of $\mathbf{z}$, using lower bound vector $\mathbf{l} \in \mathbb{R}^{N_b}$ and upper bound vector $\mathbf{h} \in \mathbb{R}^{N_b}$, and give a concrete description of its implementation. The goal of all instances of this algorithm discussed in the following sections will be to come up with the function $\mathbf{f}(\mathbf{l}, \mathbf{h}, r)$, which sets all $N_b$ bias terms at each step of the algorithm. The following algorithm framework is a vectorized and generalized version of the algorithm discussed in [CPD+24](#carlini2024).
 
-<div class="algorithm">
+<div id="algorithm-1" class="algorithm">
 <strong>Algorithm 1:</strong> Learning logit differences with multi-token calls (Vectorized)
 
 <ol>
@@ -132,7 +132,7 @@ So, the polytope $\mathcal{C}$ defined by this system of linear inequalities can
 
 $$\mathcal{C} = \{ \mathbf{x} \in \mathbb{R}^{N_b} \mid A \mathbf{x} \leq \mathbf{b} \}$$
 
-After updating the system for our polytope at each step with new information, we are interested in finding $$\mathbf{x}_{\text{min}}$$ and $$\mathbf{x}_{\text{max}}$$, where $$\mathbf{x}_{\text{min}}$$ is the solution of the polytope where each component of the vector $\mathbf{x}$ is minimal and $$\mathbf{x}_{\text{max}}$$ is the solution where each component is maximal. Formally, this can be defined as:
+After updating the system for our polytope at each step with new information, we aim to determine the bounds of the polytope. Specifically, we seek to find $$\mathbf{x}_{\text{min}}$$ and $$\mathbf{x}_{\text{max}}$$, which represent the minimum and maximum bounds for each component of the vector $$\mathbf{x}$$ within the polytope $$\mathcal{C}$$. Formally, these bounds are defined as:
 
 $$
 \mathbf{x}_{\text{min}} = \left( \min_{\mathbf{x} \in \mathcal{C}} x_1, \min_{\mathbf{x} \in \mathcal{C}} x_2, \ldots, \min_{\mathbf{x} \in \mathcal{C}} x_n \right)
@@ -173,7 +173,7 @@ Generally, we consider two different stop conditions for the attacker's querying
 </div>
 ### StartOverN With Uniform Prior
 
-We start by assuming uniform prior over the interval $[l_i, h_i]$ for each logit. A simple approach is to bias logits such that the probability of sampling token 0 (i.e. the maximum token) is $1/n$. This approach, introduced briefly in [CPD+24](#carlini2024), has been the state-of-the-art method prior to the work presented in this paper. We formalize this approach and provide a derivation for a solution of the biasing term.
+We start by assuming uniform prior over the interval $[l_i, h_i]$ for each logit. A simple approach is to bias logits such that the probability of sampling token 0 (i.e. the maximum token) is $1/n$. This approach, introduced briefly in [CPD+24](#carlini2024), has been the state-of-the-art method prior to the work presented in this paper. We formalize this approach and provide a new derivation for a solution of the biasing term.
 
 **Theorem 1:** Given independent and identically distributed (i.i.d.) random variables $P_1, P_2, \ldots, P_{n-1}$ from a uniform distribution on an interval between $l_i$ and $h_i$, and constants $b_1, b_2, \ldots, b_{n-1}$, the StartOverN algorithm aims to find $b_i$ such that:
 
@@ -230,7 +230,7 @@ $$
 $$
 </div>
 
-For the readers coming from [CPD+24](#carlini2024) we note that the solution can be rewritten using an equivalent scaling term:
+We note that the solution can be rewritten using an equivalent scaling term:
 
 <div class="math-container">
 $$
@@ -240,13 +240,13 @@ $$
 
 ### Finding parameters for normal distribution
 
-In the previous derivation, we assumed a uniform distribution for all logits in the full output token vector, as proposed in [CPD+24](#carlini2024). However, this assumption may not accurately reflect the true distribution of logits in large language models. To investigate this, we collected and analyzed logit distributions from several models, including LLaMA-7B, GPT-2, and Pythia.
+In the previous derivation, we assumed a uniform distribution for all logits in the full output token vector. This assumption is not true for LLMs; we show why on. To investigate this, we collected and analyzed logit distributions from several models, including LLaMA-7B, GPT-2, and Pythia.
 
 For LLaMA-7B, which we'll focus on in this example, we gathered 52 logit distributions using single character prompts (A-Z and a-z). After normalizing each distribution with an assumed width of 40, we flattened the 52 distributions into a single vector. Figure 1 shows the histogram of this logit distribution using 100 bins in the interval $[0, 1]$.
 
 ![Logit Distribution Fitting](/assets/gaussianfit.png)
 
-As evident from Figure 1, the logit distribution for LLaMA-7B deviates significantly from a uniform distribution. Instead, it appears to follow a normal distribution more closely. Similar patterns were observed in the other models we analyzed, though with varying parameters. This observation suggests that we can improve upon the algorithm in [CPD+24](#carlini2024) by incorporating a more accurate distributional assumption.
+As evident from Figure 1, the logit distribution for LLaMA-7B deviates significantly from a uniform distribution. Instead, it appears to follow a normal distribution more closely. Similar patterns were observed in the other models we analyzed, though with varying parameters. This observation suggests that we can improve upon the algorithm by incorporating a more accurate distributional assumption.
 
 For our numerical experiments with LLaMA-7B, we fitted a normal distribution to the data, obtaining parameters $\mu = 0.688$ and $\sigma = 0.066$. These parameters will be used in the following sections to develop an improved algorithm that leverages this more accurate representation of the logit distribution. While our algorithm assumes knowledge of $\mu$ and $\sigma$, in practice, these parameters could be estimated by transferring knowledge from smaller models or by analyzing a small sample of collected logit distributions.
 
@@ -254,9 +254,9 @@ For our numerical experiments with LLaMA-7B, we fitted a normal distribution to 
 
 Now we can formalize an algorithm using the normal distribution prior. We consider each logit as a random variable drawn from a normal distribution using the parameters $\mu$ and $\sigma^2$, which we have derived in previous section. At each step of the algorithm we bound the logit $z_i$ using $l_i$ and $h_i$ meaning the logits are actually drawn from a truncated normal distribution over the interval $[l_i, h_i]$.
 
-Formally, we note let $P_i \sim N(\mu, \sigma^2)$ be truncated such that $l_i \leq P_i \leq h_i$ and $0 \leq l_i \leq h_i \leq 1$, where $\Phi$ is the CDF of $N(\mu, \sigma^2)$.
+Formally, we note let $P_i \sim N(\mu, \sigma^2)$ follow a truncated normal distribution ([Burkardt+23](#burkardt2023)), such that $l_i \leq P_i \leq h_i$ and $0 \leq l_i \leq h_i \leq 1$, and we let $\Phi$ denote the CDF of a normal distribution $N(\mu, \sigma^2)$.
 
-Then, the CDF of $P_i$ is given by:
+Then, the CDF of $P_i$ that follows a truncated normal distribution is given by:
 
 <div class="math-container">
 $$
@@ -279,6 +279,8 @@ $$
 b_i = 1 - \Phi^{-1} \left( \left(\frac{1}{n}\right)^{\frac{1}{n-1}} (\Phi(h_i) - \Phi(l_i)) + \Phi(l_i) \right)
 $$
 </div>
+
+where $\Phi$ denotes the CDF of a normal distribution $N(\mu, \sigma^2)$.
 
 <details>
   <summary>Click to expand the proof</summary>
@@ -343,9 +345,155 @@ $$
 
 This result can be useful when considering different distributional assumptions for the logit
 
-## Numerical analysis
+### EverythingOverN With Normal Distribution Prior
 
-Notice that at each iteration of Algorithm 1, we update the lower bound $\mathbf{l}$ and upper bound $\mathbf{h}$. Upon reaching a specified stopping condition, we return both bounds as the best estimates for all logits. This approach implies that, up to this point, we have not made any concrete _guess_ about the actual values of the logits. While a straightforward solution might involve taking the midpoint, i.e., $\frac{\mathbf{h} + \mathbf{l}}{2}$, as demonstrated in this section, this strategy may be suboptimal in scenarios where the attacker is constrained by a finite query budget $T$.
+We have demonstrated that under the assumption of truncated distributions, it is feasible to find a bias that ensures the top token is sampled with a probability of $$ \frac{1}{n} $$. However, in [Section 4](https://drive.google.com/file/d/1sdGkHmTKEQiOgZv3idgbY7PBaK1zVvhX/view?usp=drive_link), we showed that a perfect algorithm adjusts logits so that every token has an equal probability of being sampled. In this section, we try to find biasing constants that ensure each token has the same probability of being sampled, $$ \frac{1}{n} $$, under the assumption of a truncated normal distribution prior.
+
+Consider $$ n $$ random variables $$ P_1, P_2, \ldots, P_n $$ drawn from a truncated normal distribution. We seek shift constants $$ b_1, b_2, \ldots, b_n $$ such that the shifted random variables $$ P_1 + b_1, P_2 + b_2, \ldots, P_n + b_n $$ have equal probability of being sampled. Specifically, we aim to satisfy:
+
+<div class="math-container">
+$$ 
+P\left(X_{(n)} = P_i + b_i\right) = \frac{1}{n} \quad \forall i
+$$
+</div>
+
+for all $$ i = 1, 2, \ldots, n $$, where $$X_{(n)}$$ is the maximum of the $$ n $$ shifted random variables. Equivalently, we can formulate the problem as finding shift constants $$ b_i $$ such that:
+
+<!-- <div class="math-container">
+$$
+P \left( \max_{j \neq i}(P_j + b_j) \leq P_i + b_i \right) = \frac{1}{n} \quad \forall i
+$$
+</div>
+
+<div class="math-container">
+$$
+\prod_{j \neq i} P(P_j + b_j \leq P_i + b_i) = \frac{1}{n} \quad \forall i
+$$
+</div> -->
+
+<div class="math-container">
+$$
+\prod_{j \neq i} P(P_j \leq P_i + b_i - b_j) = \frac{1}{n} \quad \forall i
+$$
+</div>
+
+<!-- Assuming random variables come from truncated normal distribution, we can formulate the problem using -->
+<!--
+<div class="math-container">
+$$
+\prod_{j \neq i} \frac{1}{\sigma^2\left( \Phi\left(h_j\right) - \Phi\left(l_j\right) \right) \left( \Phi\left(h_i\right) - \Phi\left(l_i\right) \right)}
+\int_{l_i}^{h_i} \phi\left(y\right) \left( \Phi\left(y + b_i - b_j\right) - \Phi\left(l_j\right) \right) dy = \frac{1}{n} \quad \forall i
+$$
+</div>
+
+<details>
+  <summary>Click to expand the derivation</summary>
+
+  For a truncated normal distribution \( X \) with bounds \([a, b]\), the probability density function (PDF) is:
+
+  <div class="math-container">
+  $$
+  f_X(x) = \frac{\phi\left(\frac{x - \mu}{\sigma}\right)}{\sigma \left( \Phi\left(\frac{b - \mu}{\sigma}\right) - \Phi\left(\frac{a - \mu}{\sigma}\right) \right)}
+  $$
+  </div>
+
+  where \( \phi(\cdot) \) is the PDF and \( \Phi(\cdot) \) is the cumulative distribution function (CDF) of the standard normal distribution.
+
+  To compute \( P(X \leq Y) \):
+
+  <div class="math-container">
+  $$
+  P(X \leq Y) = \int_{l_Y}^{h_Y} \int_{l_X}^{y} f_X(x) f_Y(y) \, dx \, dy
+  $$
+  </div>
+
+  Substituting the PDFs of \( X \) and \( Y \):
+
+  <div class="math-container">
+  $$
+  P(X \leq Y) = \int_{l_Y}^{h_Y} \int_{l_X}^{y} \frac{\phi\left(\frac{x - \mu}{\sigma}\right)}{\sigma \left( \Phi\left(\frac{h_X - \mu}{\sigma}\right) - \Phi\left(\frac{l_X - \mu}{\sigma}\right) \right)} \cdot \frac{\phi\left(\frac{y - \mu}{\sigma}\right)}{\sigma \left( \Phi\left(\frac{h_Y - \mu}{\sigma}\right) - \Phi\left(\frac{l_Y - \mu}{\sigma}\right) \right)} \, dx \, dy
+  $$
+  </div>
+
+  This can be simplified by factoring out the normalization constants:
+
+  <div class="math-container">
+  $$
+  P(X \leq Y) = \frac{1}{\sigma^2 \left( \Phi\left(\frac{h_X - \mu}{\sigma}\right) - \Phi\left(\frac{l_X - \mu}{\sigma}\right) \right)
+  \left( \Phi\left(\frac{h_Y - \mu}{\sigma}\right) - \Phi\left(\frac{l_Y - \mu}{\sigma}\right) \right)}
+  \int_{l_Y}^{h_Y} \phi\left(\frac{y - \mu}{\sigma}\right)
+  \left( \int_{l_X}^{y} \phi\left(\frac{x - \mu}{\sigma}\right) \, dx \right) dy
+  $$
+  </div>
+
+  Evaluate the inner integral with respect to \( x \):
+
+  <div class="math-container">
+  $$
+  \int_{l_X}^{y} \phi\left(\frac{x - \mu}{\sigma}\right) \, dx = \int_{l_X}^{y} \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{(x - \mu)^2}{2\sigma^2}\right) \, dx
+  $$
+  </div>
+
+  This is the CDF of the normal distribution, evaluated from \( l_X \) to \( y \):
+
+  <div class="math-container">
+  $$
+  \int_{l_X}^{y} \phi\left(\frac{x - \mu}{\sigma}\right) \, dx = \Phi\left(\frac{y - \mu}{\sigma}\right) - \Phi\left(\frac{l_X - \mu}{\sigma}\right)
+  $$
+  </div>
+
+  Now substitute back into the outer integral:
+
+  <div class="math-container">
+  $$
+  P(X \leq Y) = \frac{1}{\sigma^2\left( \Phi\left(\frac{h_X - \mu}{\sigma}\right) - \Phi\left(\frac{l_X - \mu}{\sigma}\right) \right) \left( \Phi\left(\frac{h_Y - \mu}{\sigma}\right)  - \Phi\left(\frac{l_Y - \mu}{\sigma}\right) \right)}
+  \int_{l_Y}^{h_Y} \phi\left(\frac{y - \mu}{\sigma}\right) \left( \Phi\left(\frac{y - \mu}{\sigma}\right) - \Phi\left(\frac{l_X - \mu}{\sigma}\right) \right) dy
+  $$
+  </div>
+
+  Assuming PDF and CDF defined in terms of the correct \(\mu\) and \(\sigma\):
+
+  <div class="math-container">
+  $$
+  P(X \leq Y) = \frac{1}{\sigma^2\left( \Phi\left(h_X\right) - \Phi\left(l_X\right) \right) \left( \Phi\left(h_Y\right) - \Phi\left(l_Y\right) \right)} \int_{l_Y}^{h_Y} \phi\left(y\right) \left( \Phi\left(y\right) - \Phi\left(l_X\right) \right) dy
+  $$
+  </div>
+
+  For some constant \( r \), relevant to your needs, this becomes:
+
+  <div class="math-container">
+  $$
+  P(X \leq Y + r) = \frac{1}{\sigma^2\left( \Phi\left(h_X\right) - \Phi\left(l_X\right) \right) \left( \Phi\left(h_Y\right) - \Phi\left(l_Y\right) \right)} \int_{l_Y}^{h_Y} \phi\left(y\right) \left( \Phi\left(y + r\right) - \Phi\left(l_X\right) \right) dy
+  $$
+  </div>
+
+  Alternatively, knowing both the PDF and CDF of the truncated distributions for \( X \) and \( Y \), we can write the equation as follows:
+
+  <div class="math-container">
+  $$
+  P(X \leq Y + r) = \int_{-\infty}^{\infty} F_X(y + r) f_Y(y) \, dy
+  $$
+  </div>
+
+  <div class="math-container">
+  $$
+  P(X \leq Y + r) = \int_{l_Y}^{h_Y} F_X(y + r) f_Y(y) \, dy
+  $$
+  </div>
+
+  <div class="math-container">
+  $$
+  P(P_i \leq P_n - r_i) = \int_{l_i}^{h_i} F_i(y - r_i) f_n(y) \, dy = \frac{1}{n}
+  $$
+  </div>
+
+</details> -->
+
+Using a combination of Monte Carlo approximation and random search, we can find a somewhat stable solution for the shift constants for up to $$ n = 15 $$. However, the problem is challenging due to the curse of dimensionality and the non-convex nature of the loss space. An implementation of an algorithm that attempts to find a solution, optimized for GPU performance, can be found in [this Google Colab notebook](https://colab.research.google.com/drive/1PShtg-cnkv2yJkTcOXQgBOsM5dl6hK1X?usp=sharing){:target="\_blank"}. There are a few open questions and conjectures for this problem, anybody interested in solving and pursuing them [can reach out](mailto:krystof@mitka.cz)!
+
+## Improved guessing
+
+Notice that at each iteration of [Algorithm 1](#algorithm-1), we update the lower bound $\mathbf{l}$ and upper bound $\mathbf{h}$. Upon reaching a specified stopping condition, we return both bounds as the best estimates for all logits. This approach implies that, up to this point, we have not made any concrete _guess_ about the actual values of the logits. While a straightforward solution might involve taking the midpoint, i.e., $\frac{\mathbf{h} + \mathbf{l}}{2}$, as demonstrated in this section, this strategy may be suboptimal in scenarios where the attacker is constrained by a finite query budget $T$.
 
 **Definition:** Let $\mathbf{l}, \mathbf{h} \in \mathbb{R}^{N_b}$ be vectors representing the lower and upper bounds, respectively. A **guess** is a function $g: \mathbb{R}^{N_b} \times \mathbb{R}^{N_b} \to \mathbb{R}^{N_b}$ that maps $\mathbf{l}$ and $\mathbf{h}$ to a vector $\mathbf{g} \in \mathbb{R}^{N_b}$ such that $\mathbf{l} \leq \mathbf{g} \leq \mathbf{h}$ element-wise.
 
@@ -394,15 +542,23 @@ A slightly better approach would be to adjust our guess by leveraging our unders
 
 <div class="math-container">
 $$
+
 \mathbf{m} = \frac{\mathbf{h} + \mathbf{l}}{2}
-$$
 
 $$
+
+
+$$
+
 \mathbf{r} = \frac{\mathbf{h} - \mathbf{l}}{2}
-$$
 
 $$
-\mathbf{g}_w = \mathbf{m} + \left(\frac{1 - \mathbf{h}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r} - \left(\frac{\mathbf{l}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r}
+
+
+$$
+
+\mathbf{g}\_w = \mathbf{m} + \left(\frac{1 - \mathbf{h}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r} - \left(\frac{\mathbf{l}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r}
+
 $$
 
 </div>
@@ -485,3 +641,8 @@ OpenAI, Achiam, J., Adler, S., Agarwal, S., Ahmad, L., Akkaya, I., Aleman, F. L.
 <a id="palm2023"></a>
 [Google+23]
 Anil, R., Dai, A. M., Firat, O., Johnson, M., Lepikhin, D., Passos, A., Shakeri, S., Taropa, E., Bailey, P., Chen, Z., Chu, E., Clark, J. H., Shafey, L. E., Huang, Y., Meier-Hellstern, K., Mishra, G., Moreira, E., Omernick, M., Robinson, K., ... Wu, Y. (2023, September). PaLM 2 Technical Report [arXiv:2305.10403]. [https://doi.org/10.48550/arXiv.2305.10403](https://doi.org/10.48550/arXiv.2305.10403)
+
+<a id="burkardt2023"></a>
+[B+23]
+Burkardt, J. (n.d.). The Truncated Normal Distribution. [https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf](https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf)
+$$
