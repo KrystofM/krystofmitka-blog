@@ -644,5 +644,5 @@ Anil, R., Dai, A. M., Firat, O., Johnson, M., Lepikhin, D., Passos, A., Shakeri,
 
 <a id="burkardt2023"></a>
 [B+23]
-Burkardt, J. (n.d.). The Truncated Normal Distribution. [https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf](https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf)
+Burkardt, J. (n.d.). The Truncated Normal Distribution. [https://people.sc.fsu.edu](https://people.sc.fsu.edu/~jburkardt/presentations/truncated_normal.pdf)
 $$
