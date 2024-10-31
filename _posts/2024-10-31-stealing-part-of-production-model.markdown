@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Stealing a Part of Production LM: Improving the Algorithm"
-date: 2024-10-29 11:48:50 +0200
+date: 2024-10-31 11:48:50 +0200
 excerpt: "Enhancing algorithms for extracting logit distributions from closed proprietary language models, focusing on leveraging the bias map feature and incorporating a normal distribution prior for more efficient extraction."
 author:
   name: "Krystof Mitka"
@@ -14,7 +14,7 @@ supervisors:
   - name: "Jasper Goseling"
     link: "https://people.utwente.nl/j.goseling"
 info_banner: "This blog post is a trimmed version of the research done in my bachelor thesis. For full version with additional theoretical results, checkout this <a href='https://drive.google.com/file/d/1sdGkHmTKEQiOgZv3idgbY7PBaK1zVvhX/view?usp=drive_link' target='_blank' style='text-decoration: underline;'>link</a>."
-warning_banner: "The attack described in this blog post is (as of 29th October 2024) possible to conduct against OpenAI. Attacking OpenAI and stealing a part of GPT3.5 or GPT4 can result in severe legal fines. We are not responsible for any damages that incur from such actions. The following work was carried out solely to expand the theoretical understanding of this class of attacks."
+warning_banner: "The attack described in this blog post is (as of 31st October 2024) possible to conduct against OpenAI. We do not condone trying to reverse engineer models without the API provider’s consent. The following work was carried out solely to expand the theoretical understanding of this class of attacks."
 ---
 
 ## Introduction
@@ -557,7 +557,7 @@ $$
 
 $$
 
-\mathbf{g}_w = \mathbf{m} + \left(\frac{1 - \mathbf{h}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r} - \left(\frac{\mathbf{l}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r}
+\mathbf{g}\_w = \mathbf{m} + \left(\frac{1 - \mathbf{h}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r} - \left(\frac{\mathbf{l}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r}
 
 $$
 
