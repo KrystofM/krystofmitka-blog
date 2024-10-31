@@ -489,7 +489,7 @@ $$
 
 </details> -->
 
-Using a combination of Monte Carlo approximation and random search, we can find a somewhat stable solution for the shift constants for up to $$ n = 15 $$. However, the problem is challenging due to the curse of dimensionality and the non-convex nature of the loss space. An implementation of an algorithm that attempts to find a solution, optimized for GPU performance, can be found in [this Google Colab notebook](https://colab.research.google.com/drive/1PShtg-cnkv2yJkTcOXQgBOsM5dl6hK1X?usp=sharing){:target="\_blank"}. There are a few open questions and conjectures for this problem, anybody interested in solving and pursuing them [can reach out](mailto:krystof@mitka.cz)!
+By employing a combination of Monte Carlo approximation and random search, we can achieve a relatively stable solution for the shift constants for up to $$ n = 15 $$. However, this problem remains challenging due to the curse of dimensionality and the non-convex nature of the loss space. The algorithm, optimized for GPU performance, is available in [this Google Colab notebook](https://colab.research.google.com/drive/1PShtg-cnkv2yJkTcOXQgBOsM5dl6hK1X?usp=sharing){:target="\_blank"}. There are several open [questions](https://drive.google.com/file/d/1sdGkHmTKEQiOgZv3idgbY7PBaK1zVvhX/view?usp=drive_link) and conjectures related to this problem. Anyone interested in exploring these further or seeking a solution is encouraged to [reach out](mailto:krystof@mitka.cz).
 
 ## Improved guessing
 
@@ -557,7 +557,7 @@ $$
 
 $$
 
-\mathbf{g}\_w = \mathbf{m} + \left(\frac{1 - \mathbf{h}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r} - \left(\frac{\mathbf{l}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r}
+\mathbf{g}_w = \mathbf{m} + \left(\frac{1 - \mathbf{h}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r} - \left(\frac{\mathbf{l}}{\mathbf{l} + (1 - \mathbf{h})}\right) \mathbf{r}
 
 $$
 
