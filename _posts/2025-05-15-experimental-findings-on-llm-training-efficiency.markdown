@@ -126,15 +126,7 @@ Second, I implemented scalable softmax [[14]](#ref-14), which dynamically adjust
 
 I explored several alternative attention mechanisms and architectural patterns. First, I implemented both Grouped-Query Attention (GQA) and Multi-Query Attention (MQA) [[15]](#ref-15), which reduce KV-cache size and speed up inference. However, since this benchmark measures training speed rather than inference speed, the reduced parameter count provided no benefits. Moreover, GQA and MQA lack the kernel-level optimizations of PyTorch's FlashAttention-2 [[16]](#ref-16), resulting in actually slower performance.
 
-I also experimented with a mixture-of-experts (MoE) architecture incorporating both shared and specialized experts, following the DeepSeek approach [[17]](#ref-17) [[18]](#ref-18). The model uses top-2 gating, routing each token to the two highest-scoring experts:
-
-<div class="math-container">
-$$
-y = \sum_{i \in \text{Top-2}(G(x))} G_i(x) \cdot E_i(x)
-$$
-</div>
-
-where $$G(x)$$ is the gating network and $$E_i(x)$$ is the output of expert $$i$$. A load balancing loss ensures even distribution across experts. 
+I also experimented with a mixture-of-experts (MoE) architecture incorporating both shared and specialized experts, following the DeepSeek approach [[17]](#ref-17) [[18]](#ref-18). The model uses top-2 gating, routing each token to the two highest-scoring experts, and a load-balancing loss ensures even distribution across experts. 
 
 While validation loss initially improved faster, the benefits diminished over time and eventually converged to baseline performance. This likely stems from routing overhead, sparse updates to individual experts, and the fact that MoE primarily improves inference efficiency rather than training speed, especially at smaller scales like ours.
 
@@ -202,7 +194,6 @@ where $$t_{\text{PyTorch}}$$ and $$t_{\text{CUDA}}$$ represent execution times.
 
 **Related work:** Interestingly, a few weeks after my experiments, Cognition published very similar work on *Multi-Turn RL for Generating CUDA Kernels* [[24]](#ref-24). They used the same base model and encountered identical reward hacking issues. Their extension allowed multi-turn compilation where the model observes intermediate results.
 
----
 
 ## References
 
