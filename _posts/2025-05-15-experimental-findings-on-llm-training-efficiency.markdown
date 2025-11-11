@@ -2,7 +2,11 @@
 layout: post
 title: "Experimental Findings on LLM Training Efficiency"
 date: 2025-05-15 10:00:00 +0200
+excerpt: "Practical experiments to speed up LLM training: ISL, VSL+DD, cross‑vocab embeddings (~30% speedup), multi‑token, MoE, with math on EOT retention and transfer."
 categories: machine-learning research
+author:
+  name: "Krystof Mitka"
+  link: "https://krystofmitka.com"
 info_banner: "This work was conducted as part of the <a href='https://github.com/BottleCapAI/NoCap-Test' target='_blank'>BottleCapAI NoCap-Test</a>, an open challenge focused on making large language models radically more efficient through algorithmic improvements."
 ---
 
@@ -25,7 +29,7 @@ The following sections document various experimental approaches, including curri
 
 I started by training the model incrementally on sequences of lengths 128, 256, 512, and 1024. The increments were applied after 128 or 256 steps, and the effective batch sizes were not initially scaled to match each other in total tokens per update. 
 
-The training loss dropped significantly faster at the beginning with lower sequence lengths. However, this advantage wore off toward the end of training and was eventually surpassed by standard 1024-token training. This performance drop could be attributed to either the unequal batch sizes resulting in faster weight updates early on, or to gradient updates from shorter sequences becoming less relevant during later training—an exhibit of catastrophic forgetting. 
+The training loss dropped significantly faster at the beginning with lower sequence lengths. However, this advantage wore off toward the end of training and was eventually surpassed by standard 1024-token training. This performance drop could be attributed to either the unequal batch sizes resulting in faster weight updates early on, or to gradient updates from shorter sequences becoming less relevant during later training, an exhibit of catastrophic forgetting. 
 
 After properly scaling the effective batch size, the model's training loss matched the stand-alone 1024 sequence length training [[1]](#ref-1). I suspect better results could be achieved with larger models and longer context windows.
 
@@ -37,7 +41,7 @@ Unfortunately, training became more unstable at certain points as gradients star
 
 ## Data Decomposition into Buckets
 
-To support VSL training more effectively, I implemented Data Decomposition [[2]](#ref-2) [[3]](#ref-3) of the RefinedWeb dataset, which splits documents into buckets of individual sequence lengths: 128, 256, 512, 1024, etc. Surprisingly, this resulted in a bump in validation loss—performing slightly slower than baseline even without VSL active.
+To support VSL training more effectively, I implemented Data Decomposition [[2]](#ref-2) [[3]](#ref-3) of the RefinedWeb dataset, which splits documents into buckets of individual sequence lengths: 128, 256, 512, 1024, etc. Surprisingly, this resulted in a bump in validation loss. It performed slightly slower than baseline even without VSL active.
 
 I realized something interesting here: we are effectively not teaching the model where documents end, which could be problematic. Since DD uses binary decomposition of documents, and all chunks smaller than 128 tokens are discarded, the EOT token (which appears at the end of each document) is only retained if it ends up in a chunk of size ≥ 128. 
 
@@ -53,11 +57,11 @@ This means approximately 99.2% of training sequences exclude the EOT token.
 
 One potential solution would be decomposing documents from the end rather than the start, though this could create other problems like insufficient training on document beginnings. In retrospect, using attention masking to handle variable-length sequences within a batch would likely be more appropriate and significantly easier to implement than binary decomposition.
 
-**Communication with the Apple ML Team:** I reached out to the paper's lead author (Hadi Pouransari) with these findings. His response provided helpful guidance on reproducing the paper's results, including insights on the EOT token issue and the importance of data quality. The full correspondence is included in the Appendix.
+**Communication with the Apple ML Team:** I reached out to the paper's lead author (Hadi Pouransari) with these findings. His response provided helpful guidance on reproducing the paper's results, including insights on the EOT token issue and the importance of data quality. The full correspondence is included in the [Appendix](#appendix).
 
 ## Initializing the Embedding Layer Using a Large Pre-Trained Model
 
-This approach proved to be simple yet remarkably effective—though it can be considered cheating. The basic idea is to initialize our model's embeddings using those from a larger, pre-trained model. For higher embedding dimensions, one can either concatenate dimensions or use more sophisticated methods like PCA to extract the most powerful components. The main challenge, however, is dealing with different vocabularies across models. Our GPT-2 model has a vocabulary size of 50K, while more recent models use significantly larger vocabularies with non-compatible tokenizations.
+This approach proved to be simple yet remarkably effective, though it can be considered cheating. The basic idea is to initialize our model's embeddings using those from a larger, pre-trained model. For higher embedding dimensions, one can either concatenate dimensions or use more sophisticated methods like PCA to extract the most powerful components. The main challenge, however, is dealing with different vocabularies across models. Our GPT-2 model has a vocabulary size of 50K, while more recent models use significantly larger vocabularies with non-compatible tokenizations.
 
 **Cross-Vocab Embedding Transfer:** From my previous research on extracting embedding layers from GPT-3.5/4 [[4]](#ref-4), I developed a method to transfer embeddings between different vocabularies. The approach is straightforward: 
 
@@ -73,7 +77,7 @@ where $$E_{source}(s_i)$$ are the pre-trained embeddings from the source model.
 
 There are obvious limitations to this technique. For example, if the target vocabulary has a token for "hotdog" but the source tokenizer decomposes it into ["hot", "dog"], the summed embedding may not perfectly capture the semantic meaning since the components have little connection to the whole.
 
-**Universal Embedding Geometry:** Interestingly, recent research [[5]](#ref-5) [[6]](#ref-6) suggests this approach might not be cheating after all. These papers hypothesize and demonstrate that all learned embeddings share an underlying geometric structure—essentially, they're all translatable to the same representation space. Tomas Mikolov also pointed me to earlier work on this topic [[25]](#ref-25), which showed similar geometric representations across languages in translation models, providing early evidence for this universal structure.
+**Universal Embedding Geometry:** Interestingly, recent research [[5]](#ref-5) [[6]](#ref-6) suggests this approach might not be cheating after all. These papers hypothesize and demonstrate that all learned embeddings share an underlying geometric structure; essentially, they're all translatable to the same representation space. Tomas Mikolov also pointed me to earlier work on this topic [[25]](#ref-25), which showed similar geometric representations across languages in translation models, providing early evidence for this universal structure.
 
 **Results:** When testing with embeddings extracted and converted from larger models like Qwen or DeepSeek using cross-vocab transfer, the training curve showed a sharp gain at the beginning, achieving an overall training speed increase of approximately 30%.
 
@@ -93,7 +97,7 @@ Not all experiments were successful. I experimented with replacing RMS normaliza
 
 ## Multi-Token Prediction with Extra Linear Layers
 
-I also implemented multi-token prediction by adding additional linear layers (unembedding layers) at the end of the model [[9]](#ref-9). The approach shares hidden states before mapping to the vocabulary, with auxiliary losses for each prediction head. However, this significantly increases model size—each additional predicted token requires:
+I also implemented multi-token prediction by adding additional linear layers (unembedding layers) at the end of the model [[9]](#ref-9). The approach shares hidden states before mapping to the vocabulary, with auxiliary losses for each prediction head. However, this significantly increases model size. Each additional predicted token requires:
 
 <div class="math-container">
 $$
@@ -105,7 +109,7 @@ I observed no speed gains, consistent with the paper's findings [[9]](#ref-9) th
 
 ## NoPE Layers & Scalable Softmax
 
-To improve model generalization across variable sequence lengths, I made two architectural modifications. First, I removed Rotary Position Embeddings (RoPE) [[10]](#ref-10) from most layers, only applying it to every 4th layer—an approach known as NoPE (No Position Encoding) layers [[11]](#ref-11) [[12]](#ref-12) [[13]](#ref-13). Specifically, RoPE is applied only at layers $$\ell \in \{4, 8, 12\}$$. This should theoretically help the model adapt better when switching between short and long sequences during curriculum training.
+To improve model generalization across variable sequence lengths, I made two architectural modifications. First, I removed Rotary Position Embeddings (RoPE) [[10]](#ref-10) from most layers, only applying it to every 4th layer, an approach known as NoPE (No Position Encoding) layers [[11]](#ref-11) [[12]](#ref-12) [[13]](#ref-13). Specifically, RoPE is applied only at layers $$\ell \in \{4, 8, 12\}$$. This should theoretically help the model adapt better when switching between short and long sequences during curriculum training.
 
 Second, I implemented scalable softmax [[14]](#ref-14), which dynamically adjusts attention scaling based on input vector size. This was intended to further improve generalization when transitioning between different sequence lengths.
 
@@ -123,7 +127,7 @@ $$
 
 where $$G(x)$$ is the gating network and $$E_i(x)$$ is the output of expert $$i$$. A load balancing loss ensures even distribution across experts. 
 
-While validation loss initially improved faster, the benefits diminished over time and eventually converged to baseline performance. This likely stems from routing overhead, sparse updates to individual experts, and the fact that MoE primarily improves inference efficiency rather than training speed—especially at smaller scales like ours.
+While validation loss initially improved faster, the benefits diminished over time and eventually converged to baseline performance. This likely stems from routing overhead, sparse updates to individual experts, and the fact that MoE primarily improves inference efficiency rather than training speed, especially at smaller scales like ours.
 
 | Technique              | Result                         | Estimated Speed Gain | Key Failure Mode                  |
 | ---------------------- | ------------------------------ | -------------------- | --------------------------------- |
@@ -150,7 +154,7 @@ where $$t_{\text{PyTorch}}$$ and $$t_{\text{CUDA}}$$ represent execution times.
 
 **Training setup:** I used an asymmetric setup with 1 GPU running inference via vLLM [[22]](#ref-22) and the remaining 7 GPUs for training. ZeRO Stage 3 [[23]](#ref-23) partitioned optimizer states, gradients, and model parameters across all GPUs.
 
-**Reward hacking:** An interesting challenge emerged during training—the model discovered it could maximize rewards by simply copying the input PyTorch code verbatim, which compiles successfully but provides no optimization. This is a classic reward hacking problem.
+**Reward hacking:** An interesting challenge emerged during training, the model discovered it could maximize rewards by simply copying the input PyTorch code verbatim, which compiles successfully but provides no optimization. This is a classic reward hacking problem.
 
 **Related work:** Interestingly, a few weeks after my experiments, Cognition published very similar work on *Multi-Turn RL for Generating CUDA Kernels* [[24]](#ref-24). They used the same base model and encountered identical reward hacking issues. Their extension allowed multi-turn compilation where the model observes intermediate results.
 
@@ -209,6 +213,7 @@ where $$t_{\text{PyTorch}}$$ and $$t_{\text{CUDA}}$$ represent execution times.
 <span id="ref-25">[25]</span> Mikolov, T., Le, Q. V., & Sutskever, I. (2013). Exploiting Similarities among Languages for Machine Translation. [arXiv:1309.4168](https://arxiv.org/abs/1309.4168)
 
 
+<a id="appendix"></a>
 ## Appendix: Correspondence with Hadi
 
 ```
