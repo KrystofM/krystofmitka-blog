@@ -29,7 +29,7 @@ The following sections document various experimental approaches, including curri
 
 I started by training the model incrementally on sequences of lengths 128, 256, 512, and 1024. The increments were applied after 128 or 256 steps, and the effective batch sizes were not initially scaled to match each other in total tokens per update. 
 
-The training loss dropped significantly faster at the beginning with lower sequence lengths. However, this advantage wore off toward the end of training and was eventually surpassed by standard 1024-token training. This performance drop could be attributed to either the unequal batch sizes resulting in faster weight updates early on, or to gradient updates from shorter sequences becoming less relevant during later training, an exhibit of catastrophic forgetting. 
+The training loss dropped significantly faster at the beginning with lower sequence lengths. However, this advantage wore off toward the end of training and was eventually surpassed by standard 1024-token training. This performance drop could be attributed to either the unequal batch sizes resulting in faster weight updates early on, or to gradient updates from shorter sequences becoming less relevant during later training, an exhibit of model unlearning. 
 
 After properly scaling the effective batch size, the model's training loss matched the stand-alone 1024 sequence length training [[1]](#ref-1). I suspect better results could be achieved with larger models and longer context windows.
 
@@ -138,13 +138,48 @@ where $$G(x)$$ is the gating network and $$E_i(x)$$ is the output of expert $$i$
 
 While validation loss initially improved faster, the benefits diminished over time and eventually converged to baseline performance. This likely stems from routing overhead, sparse updates to individual experts, and the fact that MoE primarily improves inference efficiency rather than training speed, especially at smaller scales like ours.
 
-| Technique              | Result                         | Estimated Speed Gain | Key Failure Mode                  |
-| ---------------------- | ------------------------------ | -------------------- | --------------------------------- |
-| Incremental SL         | Matched baseline after scaling | ~0%                  | Forgetting later                  |
-| VSL + DD               | Instability / EOT loss issue   | Negative             | Gradient spikes                   |
-| Cross-vocab Embeddings | **Major win**                  | **~30%** faster      | Requires tokenizer bridging       |
-| Multi-token Heads      | No improvement                 | 0%                   | Over-parameterization             |
-| MoE                    | Neutral                        | 0–5%                 | Routing overhead, scale too small |
+<table class="responsive-table">
+  <thead>
+    <tr>
+      <th>Technique</th>
+      <th>Result</th>
+      <th>Estimated Speed Gain</th>
+      <th>Key Failure Mode</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td data-label="Technique">Incremental SL</td>
+      <td data-label="Result">Matched baseline after scaling</td>
+      <td data-label="Estimated Speed Gain">~0%</td>
+      <td data-label="Key Failure Mode">Forgetting later</td>
+    </tr>
+    <tr>
+      <td data-label="Technique">VSL + DD</td>
+      <td data-label="Result">Instability / EOT loss issue</td>
+      <td data-label="Estimated Speed Gain">Negative</td>
+      <td data-label="Key Failure Mode">Gradient spikes</td>
+    </tr>
+    <tr>
+      <td data-label="Technique">Cross-vocab Embeddings</td>
+      <td data-label="Result"><strong>Major win</strong></td>
+      <td data-label="Estimated Speed Gain"><strong>~30% faster</strong></td>
+      <td data-label="Key Failure Mode">Requires tokenizer bridging</td>
+    </tr>
+    <tr>
+      <td data-label="Technique">Multi-token Heads</td>
+      <td data-label="Result">No improvement</td>
+      <td data-label="Estimated Speed Gain">0%</td>
+      <td data-label="Key Failure Mode">Over-parameterization</td>
+    </tr>
+    <tr>
+      <td data-label="Technique">MoE</td>
+      <td data-label="Result">Neutral</td>
+      <td data-label="Estimated Speed Gain">0–5%</td>
+      <td data-label="Key Failure Mode">Routing overhead, scale too small</td>
+    </tr>
+  </tbody>
+</table>
 
 ## BONUS: GRPO Training for Optimized CUDA Kernels
 
