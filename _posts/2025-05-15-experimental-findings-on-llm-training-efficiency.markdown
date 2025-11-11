@@ -65,24 +65,24 @@ This approach proved to be simple yet remarkably effective, though it can be con
 
 **Cross-Vocab Embedding Transfer:** From my previous research on extracting embedding layers from GPT-3.5/4 [[4]](#ref-4), I developed a method to transfer embeddings between different vocabularies. The approach is straightforward: 
 
-For each token $$t_{target}$$ in the target vocabulary $$\mathcal{V}_{target}$$ (e.g., GPT-2), use the source tokenizer to decompose it into source tokens $$\{s_1, s_2, \ldots, s_k\} \subseteq \mathcal{V}_{source}$$ (e.g., from Qwen or DeepSeek). Let the embedding matrices be:
+For each token $$t_{target}$$ in the target vocabulary $$\mathcal{V}_{target}$$ (e.g., GPT-2), use the source tokenizer to decompose it into source tokens $$\{s_1, s_2, \ldots, s_k\} \subseteq \mathcal{V}_{source}$$ (e.g., from Qwen or DeepSeek). Assume the source has a larger embedding dimension than the target ($$d_{\text{source}} > d_{\text{target}}$$). Let the embedding matrices be:
 
 <div class="math-container">
 $$
-W_{\text{source}} \in \mathbb{R}^{\lvert \mathcal{V}_{source} \rvert \times d}, \quad
-W_{\text{target}} \in \mathbb{R}^{\lvert \mathcal{V}_{target} \rvert \times d}
+W_{\text{source}} \in \mathbb{R}^{\lvert \mathcal{V}_{source} \rvert \times d_{\text{source}}}, \quad
+W_{\text{target}} \in \mathbb{R}^{\lvert \mathcal{V}_{target} \rvert \times d_{\text{target}}}
 $$
 </div>
 
-Using row-slice notation, define the target token embedding as:
+Using row-slice notation, define the target token embedding with a PCA projection $$P \in \mathbb{R}^{d_{\text{source}} \times d_{\text{target}}}$$ (fitted on rows of $$W_{\text{source}}$$) applied after summation:
 
 <div class="math-container">
 $$
-W_{\text{target}}[t,:] = \sum_{i=1}^{k} W_{\text{source}}[s_i,:]
+W_{\text{target}}[t,:] = \left( \sum_{i=1}^{k} W_{\text{source}}[s_i,:] \right) P
 $$
 </div>
 
-where $$W_{\text{source}}[s_i,:]$$ is the pre-trained embedding row for the source token $$s_i$$.
+where $$W_{\text{source}}[s_i,:]$$ is the pre-trained embedding row for the source token $$s_i$$ and $$P$$ reduces the summed source vector from $$d_{\text{source}}$$ to $$d_{\text{target}}$$.
 
 There are obvious limitations to this technique. For example, if the target vocabulary has a token for "hotdog" but the source tokenizer decomposes it into ["hot", "dog"], the summed embedding may not perfectly capture the semantic meaning since the components have little connection to the whole.
 
