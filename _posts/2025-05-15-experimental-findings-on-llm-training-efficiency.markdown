@@ -65,15 +65,24 @@ This approach proved to be simple yet remarkably effective, though it can be con
 
 **Cross-Vocab Embedding Transfer:** From my previous research on extracting embedding layers from GPT-3.5/4 [[4]](#ref-4), I developed a method to transfer embeddings between different vocabularies. The approach is straightforward: 
 
-For each token $$t_{target}$$ in the target vocabulary $$\mathcal{V}_{target}$$ (e.g., GPT-2), use the source tokenizer to decompose it into source tokens $$\{s_1, s_2, \ldots, s_k\} \subseteq \mathcal{V}_{source}$$ (e.g., from Qwen or DeepSeek). Then, the target embedding is computed as:
+For each token $$t_{target}$$ in the target vocabulary $$\mathcal{V}_{target}$$ (e.g., GPT-2), use the source tokenizer to decompose it into source tokens $$\{s_1, s_2, \ldots, s_k\} \subseteq \mathcal{V}_{source}$$ (e.g., from Qwen or DeepSeek). Let the embedding matrices be:
 
 <div class="math-container">
 $$
-E_{target}(t) = \sum_{i=1}^{k} E_{source}(s_i)
+W_{\text{source}} \in \mathbb{R}^{\lvert \mathcal{V}_{source} \rvert \times d}, \quad
+W_{\text{target}} \in \mathbb{R}^{\lvert \mathcal{V}_{target} \rvert \times d}
 $$
 </div>
 
-where $$E_{source}(s_i)$$ are the pre-trained embeddings from the source model.
+Using row-slice notation, define the target token embedding as:
+
+<div class="math-container">
+$$
+W_{\text{target}}[t,:] = \sum_{i=1}^{k} W_{\text{source}}[s_i,:]
+$$
+</div>
+
+where $$W_{\text{source}}[s_i,:]$$ is the pre-trained embedding row for the source token $$s_i$$.
 
 There are obvious limitations to this technique. For example, if the target vocabulary has a token for "hotdog" but the source tokenizer decomposes it into ["hot", "dog"], the summed embedding may not perfectly capture the semantic meaning since the components have little connection to the whole.
 
